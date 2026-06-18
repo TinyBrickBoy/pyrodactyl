@@ -134,7 +134,7 @@ class OpenIdController extends AbstractLoginController
             $user = $this->createUser($subject, $claims);
         }
 
-        $this->login($user, $request);
+        $this->completeLogin($user, $request);
 
         Activity::event('auth:success')->withRequestMetadata()->subject($user)->property('via', 'sso')->log();
 
@@ -212,7 +212,7 @@ class OpenIdController extends AbstractLoginController
     /**
      * Authenticate the user against the web guard and flag the session as SSO.
      */
-    protected function login(User $user, Request $request): void
+    protected function completeLogin(User $user, Request $request): void
     {
         $request->session()->regenerate();
         $this->auth->guard()->login($user, true);
