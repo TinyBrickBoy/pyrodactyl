@@ -70,6 +70,7 @@ Route::group(['prefix' => 'settings'], function () {
     Route::get('/mail', [Admin\Settings\MailController::class, 'index'])->name('admin.settings.mail');
     Route::get('/advanced', [Admin\Settings\AdvancedController::class, 'index'])->name('admin.settings.advanced');
     Route::get('/captcha', [Admin\Settings\CaptchaController::class, 'index'])->name('admin.settings.captcha');
+    Route::get('/sso', [Admin\Settings\OpenIdController::class, 'index'])->name('admin.settings.sso');
 
     Route::group(['prefix' => 'domains'], function () {
         Route::get('/', [Admin\Settings\DomainsController::class, 'index'])->name('admin.settings.domains.index');
@@ -90,6 +91,7 @@ Route::group(['prefix' => 'settings'], function () {
     Route::patch('/mail', [Admin\Settings\MailController::class, 'update']);
     Route::patch('/advanced', [Admin\Settings\AdvancedController::class, 'update']);
     Route::patch('/captcha', [Admin\Settings\CaptchaController::class, 'update']);
+    Route::patch('/sso', [Admin\Settings\OpenIdController::class, 'update']);
 });
 
 /*
