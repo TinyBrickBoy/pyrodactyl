@@ -1,8 +1,10 @@
 import { Actions, useStoreActions } from 'easy-peasy';
 import { useEffect, useState } from 'react';
 
+import FlashMessageRender from '@/components/FlashMessageRender';
 import ActionButton from '@/components/elements/ActionButton';
 import Code from '@/components/elements/Code';
+import CopyOnClick from '@/components/elements/CopyOnClick';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 
 import { httpErrorToHuman } from '@/api/http';
@@ -16,7 +18,11 @@ import {
 
 import { ApplicationStore } from '@/state';
 
-const SftpPasswordForm = () => {
+interface Props {
+    showIntro?: boolean;
+}
+
+const SftpPasswordForm = ({ showIntro = true }: Props) => {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<SftpPasswordStatus | null>(null);
     const [generated, setGenerated] = useState<GeneratedSftpPassword | null>(null);
@@ -74,18 +80,21 @@ const SftpPasswordForm = () => {
     return (
         <div className='relative'>
             <SpinnerOverlay size={'large'} visible={loading} />
-            <p className='text-sm mb-4 text-zinc-300'>
-                Generate a temporary password for SFTP access. This is useful if you sign in through single sign-on
-                and have no account password to use with SFTP. The password is shown only once and expires
-                automatically.
-            </p>
+            <FlashMessageRender byKey={'account:sftp-password'} />
+            {showIntro && (
+                <p className='text-sm mb-4 text-zinc-300'>
+                    Generate a temporary password for SFTP access. This is useful if you sign in through single
+                    sign-on and have no account password to use with SFTP. The password is shown only once and
+                    expires automatically.
+                </p>
+            )}
 
             {generated && (
                 <div className='mb-4 space-y-2'>
-                    <p className='text-sm text-zinc-300'>
-                        Copy this password now — it will not be shown again:
-                    </p>
-                    <Code>{generated.password}</Code>
+                    <p className='text-sm text-zinc-300'>Copy this password now — it will not be shown again:</p>
+                    <CopyOnClick text={generated.password} showInNotification={false}>
+                        <Code>{generated.password}</Code>
+                    </CopyOnClick>
                     <p className='text-xs text-zinc-400'>
                         Expires {new Date(generated.expires_at).toLocaleString()}.
                     </p>

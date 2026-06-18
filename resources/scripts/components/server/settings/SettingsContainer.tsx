@@ -9,6 +9,7 @@ import Label from '@/components/elements/Label';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
 import TitledGreyBox from '@/components/elements/TitledGreyBox';
+import SftpPasswordForm from '@/components/dashboard/forms/SftpPasswordForm';
 import ReinstallServerBox from '@/components/server/settings/ReinstallServerBox';
 
 import { ip } from '@/lib/formatters';
@@ -19,6 +20,7 @@ import RenameServerBox from './RenameServerBox';
 
 const SettingsContainer = () => {
     const username = useStoreState((state) => state.user.data!.username);
+    const ssoAuthenticated = useStoreState((state: any) => state.settings.data?.sso?.authenticated || false);
     const id = ServerContext.useStoreState((state) => state.server.data!.id);
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const node = ServerContext.useStoreState((state) => state.server.data!.node);
@@ -73,19 +75,24 @@ const SettingsContainer = () => {
                                 >{`${username}.${id}`}</code>
                             </CopyOnClick>
                         </div>
-                        <div className={`mt-6 flex items-center`}>
-                            <div className={`flex-1`}>
-                                <div className={`border-l-4 border-brand p-3`}>
-                                    <p className={`text-xs text-zinc-200`}>
-                                        Your SFTP password is the same as the password you use to access this panel.
-                                    </p>
-                                </div>
+                        <div className={`mt-6`}>
+                            <div className={`border-l-4 border-brand p-3`}>
+                                <p className={`text-xs text-zinc-200`}>
+                                    {ssoAuthenticated
+                                        ? 'You signed in through SSO, so you have no panel password to use for SFTP. Generate a temporary SFTP password below.'
+                                        : 'Your SFTP password is the same as the password you use to access this panel, or you can generate a temporary SFTP password below.'}
+                                </p>
                             </div>
-                            <div className={`ml-4`}>
-                                <a href={`sftp://${username}.${id}@${ip(sftp.ip)}:${sftp.port}`}>
-                                    <ActionButton variant='secondary'>Launch SFTP</ActionButton>
-                                </a>
-                            </div>
+                        </div>
+
+                        <div className={`mt-6`}>
+                            <SftpPasswordForm showIntro={false} />
+                        </div>
+
+                        <div className={`mt-6 flex justify-end`}>
+                            <a href={`sftp://${username}.${id}@${ip(sftp.ip)}:${sftp.port}`}>
+                                <ActionButton variant='secondary'>Launch SFTP</ActionButton>
+                            </a>
                         </div>
                     </TitledGreyBox>
                 </Can>

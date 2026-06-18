@@ -60,7 +60,7 @@ const AccountOverviewContainer = () => {
                             <ContentBox title={'Multi-Factor Authentication'}>
                                 <ConfigureTwoFactorForm />
                             </ContentBox>
-                            <ContentBox title={'Temporary SFTP Password'} showFlashes={'account:sftp-password'}>
+                            <ContentBox title={'Temporary SFTP Password'}>
                                 <SftpPasswordForm />
                             </ContentBox>
                         </div>
