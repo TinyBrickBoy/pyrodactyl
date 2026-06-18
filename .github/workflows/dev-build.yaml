@@ -3,7 +3,7 @@ name: Docker Build
 on:
   push:
     branches:
-      - main
+      - '**'
 
 permissions:
     packages: write
@@ -31,13 +31,12 @@ jobs:
       - name: Setup Blacksmith Builder
         uses: useblacksmith/setup-docker-builder@v1
 
-      - name: Build and push canary image
+      - name: Build and push latest image
         uses: useblacksmith/build-push-action@v2
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:canary
-            ghcr.io/${{ github.repository }}:canary-${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
-
