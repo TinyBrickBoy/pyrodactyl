@@ -48,7 +48,12 @@ class SftpAuthenticationController extends Controller
         $server = $this->getServer($request, $connection['server']);
 
         if ($request->input('type') !== 'public_key') {
-            if (!password_verify($request->input('password'), $user->password)) {
+            $password = (string) $request->input('password');
+
+            // Accept either the account password or a still-valid temporary SFTP
+            // password. The latter lets SSO users (who have no usable account
+            // password) connect over SFTP.
+            if (!password_verify($password, $user->password) && !$user->verifyTemporarySftpPassword($password)) {
                 Activity::event('auth:sftp.fail')->property('method', 'password')->subject($user)->log();
 
                 $this->reject($request);

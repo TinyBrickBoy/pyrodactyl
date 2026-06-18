@@ -52,6 +52,12 @@ Route::prefix('/account')->middleware(AccountSubject::class)->group(function () 
         Route::post('/', [Client\SSHKeyController::class, 'store']);
         Route::post('/remove', [Client\SSHKeyController::class, 'delete']);
     });
+
+    Route::prefix('/sftp-password')->group(function () {
+        Route::get('/', [Client\SftpPasswordController::class, 'index']);
+        Route::post('/', [Client\SftpPasswordController::class, 'store']);
+        Route::delete('/', [Client\SftpPasswordController::class, 'delete']);
+    });
 });
 
 /*

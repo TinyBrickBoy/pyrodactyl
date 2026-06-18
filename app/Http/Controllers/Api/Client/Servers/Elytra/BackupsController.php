@@ -9,13 +9,12 @@ use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
 use Pterodactyl\Models\Permission;
 use PragmaRX\Google2FA\Google2FA;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Auth\Access\AuthorizationException;
 use Pterodactyl\Services\Elytra\ElytraJobService;
 use Pterodactyl\Services\Backups\DownloadLinkService;
 use Pterodactyl\Transformers\Api\Client\BackupTransformer;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Pterodactyl\Http\Controllers\Concerns\ConfirmsSensitiveActions;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Backups\StoreBackupRequest;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Backups\RestoreBackupRequest;
 
@@ -23,6 +22,8 @@ use Pterodactyl\Enums\Daemon\Adapters;
 
 class BackupsController extends ClientApiController
 {
+    use ConfirmsSensitiveActions;
+
     public function __construct(
         private ElytraJobService $elytraJobService,
         private DownloadLinkService $downloadLinkService,
@@ -135,27 +136,10 @@ class BackupsController extends ClientApiController
             throw new AuthorizationException();
         }
 
-        // Only require password/2FA for web session requests, not API keys
-        if (!$request->user()->currentAccessToken()) {
-            // Require password confirmation for this destructive operation
-            $password = $request->input('password');
-            if (empty($password) || !password_verify($password, $request->user()->password)) {
-                throw new BadRequestHttpException('The password provided was not valid.');
-            }
-
-            // If user has 2FA enabled, require TOTP code
-            if ($request->user()->use_totp) {
-                $totpCode = $request->input('totp_code');
-                if (empty($totpCode)) {
-                    throw new BadRequestHttpException('Two-factor authentication code is required.');
-                }
-
-                $secret = Crypt::decrypt($request->user()->totp_secret);
-                if (!$this->google2FA->verifyKey($secret, $totpCode)) {
-                    throw new BadRequestHttpException('The two-factor authentication code provided was not valid.');
-                }
-            }
-        }
+        // Confirm the user's identity before this destructive operation. Password
+        // sessions confirm with their password (+ TOTP); SSO sessions confirm via
+        // a recent SSO re-authentication.
+        $this->confirmSensitiveAction($request, $this->google2FA);
 
         $result = $this->elytraJobService->submitJob(
             $server,
@@ -182,27 +166,10 @@ class BackupsController extends ClientApiController
             throw new AuthorizationException();
         }
 
-        // Only require password/2FA for web session requests, not API keys
-        if (!$request->user()->currentAccessToken()) {
-            // Require password confirmation for this destructive operation
-            $password = $request->input('password');
-            if (empty($password) || !password_verify($password, $request->user()->password)) {
-                throw new BadRequestHttpException('The password provided was not valid.');
-            }
-
-            // If user has 2FA enabled, require TOTP code
-            if ($request->user()->use_totp) {
-                $totpCode = $request->input('totp_code');
-                if (empty($totpCode)) {
-                    throw new BadRequestHttpException('Two-factor authentication code is required.');
-                }
-
-                $secret = Crypt::decrypt($request->user()->totp_secret);
-                if (!$this->google2FA->verifyKey($secret, $totpCode)) {
-                    throw new BadRequestHttpException('The two-factor authentication code provided was not valid.');
-                }
-            }
-        }
+        // Confirm the user's identity before this destructive operation. Password
+        // sessions confirm with their password (+ TOTP); SSO sessions confirm via
+        // a recent SSO re-authentication.
+        $this->confirmSensitiveAction($request, $this->google2FA);
 
         $result = $this->elytraJobService->submitJob(
             $server,
@@ -301,27 +268,10 @@ class BackupsController extends ClientApiController
             throw new AuthorizationException();
         }
 
-        // Only require password/2FA for web session requests, not API keys
-        if (!$request->user()->currentAccessToken()) {
-            // Require password confirmation for this destructive operation
-            $password = $request->input('password');
-            if (empty($password) || !password_verify($password, $request->user()->password)) {
-                throw new BadRequestHttpException('The password provided was not valid.');
-            }
-
-            // If user has 2FA enabled, require TOTP code
-            if ($request->user()->use_totp) {
-                $totpCode = $request->input('totp_code');
-                if (empty($totpCode)) {
-                    throw new BadRequestHttpException('Two-factor authentication code is required.');
-                }
-
-                $secret = Crypt::decrypt($request->user()->totp_secret);
-                if (!$this->google2FA->verifyKey($secret, $totpCode)) {
-                    throw new BadRequestHttpException('The two-factor authentication code provided was not valid.');
-                }
-            }
-        }
+        // Confirm the user's identity before this destructive operation. Password
+        // sessions confirm with their password (+ TOTP); SSO sessions confirm via
+        // a recent SSO re-authentication.
+        $this->confirmSensitiveAction($request, $this->google2FA);
 
         $backupCount = $server->backups()->count();
 
@@ -354,27 +304,10 @@ class BackupsController extends ClientApiController
             throw new AuthorizationException();
         }
 
-        // Only require password/2FA for web session requests, not API keys
-        if (!$request->user()->currentAccessToken()) {
-            // Require password confirmation for this destructive operation
-            $password = $request->input('password');
-            if (empty($password) || !password_verify($password, $request->user()->password)) {
-                throw new BadRequestHttpException('The password provided was not valid.');
-            }
-
-            // If user has 2FA enabled, require TOTP code
-            if ($request->user()->use_totp) {
-                $totpCode = $request->input('totp_code');
-                if (empty($totpCode)) {
-                    throw new BadRequestHttpException('Two-factor authentication code is required.');
-                }
-
-                $secret = Crypt::decrypt($request->user()->totp_secret);
-                if (!$this->google2FA->verifyKey($secret, $totpCode)) {
-                    throw new BadRequestHttpException('The two-factor authentication code provided was not valid.');
-                }
-            }
-        }
+        // Confirm the user's identity before this destructive operation. Password
+        // sessions confirm with their password (+ TOTP); SSO sessions confirm via
+        // a recent SSO re-authentication.
+        $this->confirmSensitiveAction($request, $this->google2FA);
 
         // Validate backup_uuids
         $backupUuids = $request->input('backup_uuids', []);

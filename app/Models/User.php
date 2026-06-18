@@ -32,6 +32,8 @@ use Pterodactyl\Notifications\SendPasswordReset as ResetPasswordNotification;
  * @property string|null $name_first
  * @property string|null $name_last
  * @property string $password
+ * @property string|null $sftp_password
+ * @property \Illuminate\Support\Carbon|null $sftp_password_expires_at
  * @property string|null $remember_token
  * @property string $language
  * @property bool $root_admin
@@ -138,12 +140,13 @@ class User extends Model implements
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',
+        'sftp_password_expires_at' => 'datetime',
     ];
 
     /**
      * The attributes excluded from the model's JSON form.
      */
-    protected $hidden = ['password', 'remember_token', 'totp_secret', 'totp_authenticated_at'];
+    protected $hidden = ['password', 'remember_token', 'totp_secret', 'totp_authenticated_at', 'sftp_password', 'sftp_password_expires_at'];
 
     /**
      * Default values for specific fields in the database.
@@ -224,6 +227,24 @@ class User extends Model implements
     public function getNameAttribute(): string
     {
         return trim($this->name_first . ' ' . $this->name_last);
+    }
+
+    /**
+     * Verify a plaintext password against the user's temporary SFTP password,
+     * if one is set and has not expired. This allows users without a usable
+     * account password (e.g. those provisioned through SSO) to access SFTP.
+     */
+    public function verifyTemporarySftpPassword(string $password): bool
+    {
+        if (empty($this->sftp_password) || $this->sftp_password_expires_at === null) {
+            return false;
+        }
+
+        if ($this->sftp_password_expires_at->isPast()) {
+            return false;
+        }
+
+        return password_verify($password, $this->sftp_password);
     }
 
     /**
