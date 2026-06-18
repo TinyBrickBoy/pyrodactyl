@@ -35,6 +35,15 @@ class SettingsServiceProvider extends ServiceProvider
     'pterodactyl:captcha:hcaptcha:secret_key',
     'pterodactyl:captcha:recaptcha:site_key',
     'pterodactyl:captcha:recaptcha:secret_key',
+    'openid:enabled',
+    'openid:display_name',
+    'openid:issuer',
+    'openid:client_id',
+    'openid:client_secret',
+    'openid:scopes',
+    'openid:auto_create',
+    'openid:create_as_admin',
+    'openid:reauth_window',
   ];
 
 
@@ -61,6 +70,7 @@ class SettingsServiceProvider extends ServiceProvider
     'pterodactyl:captcha:turnstile:secret_key',
     'pterodactyl:captcha:hcaptcha:secret_key',
     'pterodactyl:captcha:recaptcha:secret_key',
+    'openid:client_secret',
   ];
 
   /**
