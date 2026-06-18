@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 
 import MessageBox from '@/components/MessageBox';
 import ConfigureTwoFactorForm from '@/components/dashboard/forms/ConfigureTwoFactorForm';
+import SftpPasswordForm from '@/components/dashboard/forms/SftpPasswordForm';
 import UpdateEmailAddressForm from '@/components/dashboard/forms/UpdateEmailAddressForm';
 import UpdatePasswordForm from '@/components/dashboard/forms/UpdatePasswordForm';
 import ContentBox from '@/components/elements/ContentBox';
@@ -58,6 +59,9 @@ const AccountOverviewContainer = () => {
                             </ContentBox>
                             <ContentBox title={'Multi-Factor Authentication'}>
                                 <ConfigureTwoFactorForm />
+                            </ContentBox>
+                            <ContentBox title={'Temporary SFTP Password'} showFlashes={'account:sftp-password'}>
+                                <SftpPasswordForm />
                             </ContentBox>
                         </div>
                     </div>

@@ -18,6 +18,16 @@ Route::get('/login', [Auth\LoginController::class, 'index'])->name('auth.login')
 Route::get('/password', [Auth\LoginController::class, 'index'])->name('auth.forgot-password');
 Route::get('/password/reset/{token}', [Auth\LoginController::class, 'index'])->name('auth.reset');
 
+// OpenID Connect single sign-on. These routes drop the "guest" middleware so an
+// already authenticated user can perform an SSO re-authentication when confirming
+// a destructive action (such as deleting a backup).
+Route::get('/login/sso', [Auth\OpenIdController::class, 'redirect'])
+  ->withoutMiddleware('guest')
+  ->name('auth.sso');
+Route::get('/login/sso/callback', [Auth\OpenIdController::class, 'callback'])
+  ->withoutMiddleware('guest')
+  ->name('auth.sso.callback');
+
 // Apply a throttle to authentication action endpoints to slow down manual attack spammers. 🤷‍
 //
 // @see \Pterodactyl\Providers\RouteServiceProvider

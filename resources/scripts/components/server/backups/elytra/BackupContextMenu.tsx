@@ -55,6 +55,20 @@ const BackupContextMenu = ({ backup }: Props) => {
     const { clearFlashes, clearAndAddHttpError, addFlash } = useFlash();
     const { deleteBackup, restoreBackup, renameBackup, toggleBackupLock, refresh } = useUnifiedBackups();
     const hasTwoFactor = useStoreState((state: ApplicationStore) => state.user.data?.useTotp || false);
+    const ssoAuthenticated = useStoreState((state: any) => state.settings.data?.sso?.authenticated || false);
+
+    // When the current session signed in through SSO it has no usable account
+    // password, so destructive actions are confirmed by re-authenticating with
+    // the SSO provider instead of by entering a password.
+    const handleSsoReauthentication = (error: any): boolean => {
+        const code = error?.response?.data?.errors?.[0]?.code;
+        if (code === 'SsoReauthenticationRequiredException') {
+            const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/auth/login/sso?confirm=1&return=${returnTo}`;
+            return true;
+        }
+        return false;
+    };
 
     const doDownload = () => {
         setLoading(true);
@@ -71,22 +85,24 @@ const BackupContextMenu = ({ backup }: Props) => {
     };
 
     const doDeletion = async () => {
-        if (!deletePassword) {
-            addFlash({
-                key: 'backup:delete',
-                type: 'error',
-                message: 'Password is required to delete this backup.',
-            });
-            return;
-        }
+        if (!ssoAuthenticated) {
+            if (!deletePassword) {
+                addFlash({
+                    key: 'backup:delete',
+                    type: 'error',
+                    message: 'Password is required to delete this backup.',
+                });
+                return;
+            }
 
-        if (hasTwoFactor && !deleteTotpCode) {
-            addFlash({
-                key: 'backup:delete',
-                type: 'error',
-                message: 'Two-factor authentication code is required.',
-            });
-            return;
+            if (hasTwoFactor && !deleteTotpCode) {
+                addFlash({
+                    key: 'backup:delete',
+                    type: 'error',
+                    message: 'Two-factor authentication code is required.',
+                });
+                return;
+            }
         }
 
         setLoading(true);
@@ -94,10 +110,12 @@ const BackupContextMenu = ({ backup }: Props) => {
 
         try {
             await http.delete(`/api/client/servers/${daemonType}/${uuid}/backups/${backup.uuid}`, {
-                data: {
-                    password: deletePassword,
-                    ...(hasTwoFactor ? { totp_code: deleteTotpCode } : {}),
-                },
+                data: ssoAuthenticated
+                    ? {}
+                    : {
+                          password: deletePassword,
+                          ...(hasTwoFactor ? { totp_code: deleteTotpCode } : {}),
+                      },
             });
 
             setLoading(false);
@@ -108,38 +126,46 @@ const BackupContextMenu = ({ backup }: Props) => {
             // Refresh the backup list to reflect the deletion
             await refresh();
         } catch (error) {
+            if (handleSsoReauthentication(error)) return;
             clearAndAddHttpError({ key: 'backup:delete', error });
             setLoading(false);
         }
     };
 
     const doRestorationAction = async () => {
-        if (!restorePassword) {
-            addFlash({
-                key: 'backup:restore',
-                type: 'error',
-                message: 'Password is required to restore this backup.',
-            });
-            return;
-        }
+        if (!ssoAuthenticated) {
+            if (!restorePassword) {
+                addFlash({
+                    key: 'backup:restore',
+                    type: 'error',
+                    message: 'Password is required to restore this backup.',
+                });
+                return;
+            }
 
-        if (hasTwoFactor && !restoreTotpCode) {
-            addFlash({
-                key: 'backup:restore',
-                type: 'error',
-                message: 'Two-factor authentication code is required.',
-            });
-            return;
+            if (hasTwoFactor && !restoreTotpCode) {
+                addFlash({
+                    key: 'backup:restore',
+                    type: 'error',
+                    message: 'Two-factor authentication code is required.',
+                });
+                return;
+            }
         }
 
         setLoading(true);
         clearFlashes('backup:restore');
 
         try {
-            await http.post(`/api/client/servers/${daemonType}/${uuid}/backups/${backup.uuid}/restore`, {
-                password: restorePassword,
-                ...(hasTwoFactor ? { totp_code: restoreTotpCode } : {}),
-            });
+            await http.post(
+                `/api/client/servers/${daemonType}/${uuid}/backups/${backup.uuid}/restore`,
+                ssoAuthenticated
+                    ? {}
+                    : {
+                          password: restorePassword,
+                          ...(hasTwoFactor ? { totp_code: restoreTotpCode } : {}),
+                      },
+            );
 
             // Set server status to restoring
             setServerFromState((s) => ({
@@ -152,6 +178,7 @@ const BackupContextMenu = ({ backup }: Props) => {
             setRestorePassword('');
             setRestoreTotpCode('');
         } catch (error) {
+            if (handleSsoReauthentication(error)) return;
             clearAndAddHttpError({ key: 'backup:restore', error });
             setLoading(false);
         }
@@ -287,22 +314,33 @@ const BackupContextMenu = ({ backup }: Props) => {
                     </div>
 
                     <div className='space-y-3'>
-                        <div>
-                            <label htmlFor='restore-password' className='block text-sm font-medium text-zinc-300 mb-1'>
-                                Password
-                            </label>
-                            <input
-                                id='restore-password'
-                                type='password'
-                                className='w-full px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm border border-zinc-700 focus:border-brand'
-                                placeholder='Enter your password'
-                                value={restorePassword}
-                                onChange={(e) => setRestorePassword(e.target.value)}
-                                disabled={loading}
-                            />
-                        </div>
+                        {ssoAuthenticated && (
+                            <p className='text-sm text-zinc-400'>
+                                You signed in through SSO. You will be asked to re-authenticate with your SSO provider
+                                to confirm this action.
+                            </p>
+                        )}
+                        {!ssoAuthenticated && (
+                            <div>
+                                <label
+                                    htmlFor='restore-password'
+                                    className='block text-sm font-medium text-zinc-300 mb-1'
+                                >
+                                    Password
+                                </label>
+                                <input
+                                    id='restore-password'
+                                    type='password'
+                                    className='w-full px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm border border-zinc-700 focus:border-brand'
+                                    placeholder='Enter your password'
+                                    value={restorePassword}
+                                    onChange={(e) => setRestorePassword(e.target.value)}
+                                    disabled={loading}
+                                />
+                            </div>
+                        )}
 
-                        {hasTwoFactor && (
+                        {!ssoAuthenticated && hasTwoFactor && (
                             <div>
                                 <label htmlFor='restore-totp' className='block text-sm font-medium text-zinc-300 mb-1'>
                                     Two-Factor Authentication Code
@@ -388,22 +426,33 @@ const BackupContextMenu = ({ backup }: Props) => {
                     </div>
 
                     <div className='space-y-3'>
-                        <div>
-                            <label htmlFor='delete-password' className='block text-sm font-medium text-zinc-300 mb-1'>
-                                Password
-                            </label>
-                            <input
-                                id='delete-password'
-                                type='password'
-                                className='w-full px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm border border-zinc-700 focus:border-brand'
-                                placeholder='Enter your password'
-                                value={deletePassword}
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                disabled={loading}
-                            />
-                        </div>
+                        {ssoAuthenticated && (
+                            <p className='text-sm text-zinc-400'>
+                                You signed in through SSO. You will be asked to re-authenticate with your SSO provider
+                                to confirm this action.
+                            </p>
+                        )}
+                        {!ssoAuthenticated && (
+                            <div>
+                                <label
+                                    htmlFor='delete-password'
+                                    className='block text-sm font-medium text-zinc-300 mb-1'
+                                >
+                                    Password
+                                </label>
+                                <input
+                                    id='delete-password'
+                                    type='password'
+                                    className='w-full px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm border border-zinc-700 focus:border-brand'
+                                    placeholder='Enter your password'
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    disabled={loading}
+                                />
+                            </div>
+                        )}
 
-                        {hasTwoFactor && (
+                        {!ssoAuthenticated && hasTwoFactor && (
                             <div>
                                 <label htmlFor='delete-totp' className='block text-sm font-medium text-zinc-300 mb-1'>
                                     Two-Factor Authentication Code
