@@ -42,8 +42,8 @@ $(document).ready(function() {
                 function() {
                     $.ajax({
                         type: 'POST',
-                        url: Pterodactyl.meta.saveFile,
-                        headers: { 'X-CSRF-Token': Pterodactyl.meta.csrfToken },
+                        url: Pyrodactyl.meta.saveFile,
+                        headers: { 'X-CSRF-Token': Pyrodactyl.meta.csrfToken },
                         data: {
                             file: 'eula.txt',
                             contents: 'eula=true',
